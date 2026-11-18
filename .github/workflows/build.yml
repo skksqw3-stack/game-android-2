@@ -1,0 +1,39 @@
+name: Build 3 APKs
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        zip: [whack_a_mole, snake_game, top_down_racer]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '7.6.4'
+
+      - name: Extract ${{ matrix.zip }}.zip
+        run: |
+          mkdir -p work/${{ matrix.zip }}
+          unzip -q ${{ matrix.zip }}.zip -d work/${{ matrix.zip }}
+
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon -p work/${{ matrix.zip }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.zip }}-apk
+          path: work/${{ matrix.zip }}/app/build/outputs/apk/debug/*.apk
